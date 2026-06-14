@@ -261,8 +261,7 @@ QUY TẮC CỐT LÕI:
 ${socraticRule}
 3. CẤM BẮT CHƯỚC ĐỘ DÀI LỊCH SỬ NẾU HIỆN TẠI YÊU CẦU ĐỘ DÀI KHÁC. Phải tuân theo yêu cầu hiện tại.
 4. FORMAT: Dùng LaTeX.
-${styleGuidance}
-${conciseModeGuidance}`;
+${styleGuidance}`;
     }
 
     let prompt = "";
@@ -305,7 +304,7 @@ NGỮ CẢNH BỔ SUNG: ${context || "Không có"}
 
 [CÂU HỎI MỚI CỦA HỌC SINH]: ${message}
 
-${responseStyle === "detailed" ? "[LỜI NHẮC LÕI]: MÀY ĐANG Ở CHẾ ĐỘ CHI TIẾT. HÃY PHỚT LỜ LỊCH SỬ NGẮN GỌN TRƯỚC ĐÓ! BẮT BUỘC PHẢI GIẢI THÍCH DÀI DẰNG DẶC." : ""}
+${responseLength === "detailed" || responseLength === "super_detailed" ? "[LỜI NHẮC LÕI]: MÀY ĐANG Ở CHẾ ĐỘ CHI TIẾT. HÃY PHỚT LỜ LỊCH SỬ NGẮN GỌN TRƯỚC ĐÓ! BẮT BUỘC PHẢI GIẢI THÍCH DÀI DẰNG DẶC." : ""}
 `;
       messages = [
         { role: "system", content: systemPrompt },

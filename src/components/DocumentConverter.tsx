@@ -203,6 +203,34 @@ export default function DocumentConverter() {
   const [manualBatch, setManualBatch] = useState<any[]>([]);
   const [editingManualId, setEditingManualId] = useState<string | null>(null);
   const manualFrontInputRef = useRef<HTMLInputElement>(null);
+  const [isGeneratingManualAi, setIsGeneratingManualAi] = useState(false);
+
+  const handleGenerateManualBack = async () => {
+    if (!manualFront.trim()) {
+      setError("Vui lòng nhập Mặt trước (Từ / Khái niệm) trước khi phân tích AI!");
+      manualFrontInputRef.current?.focus();
+      return;
+    }
+    setIsGeneratingManualAi(true);
+    try {
+      const res = await safeRequest("/api/automation/manual-define", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ front: manualFront, wordForm: manualWordForm })
+      });
+      const data = await res.json();
+      if (res.ok && (data.success || data.definition)) {
+        setManualBack(data.definition);
+        setToastSuccessMessage("AI đã phân tích thành công!");
+      } else {
+        throw new Error(data.error || data.message || "Lỗi cập nhật AI");
+      }
+    } catch (err: any) {
+      setError(err.message || "Lỗi khi gọi AI phân tích.");
+    } finally {
+      setIsGeneratingManualAi(false);
+    }
+  };
 
   const [isAiSystemBusy, setIsAiSystemBusy] = useState(false);
   const [aiBusyType, setAiBusyType] = useState<string | null>(null);
@@ -2441,9 +2469,20 @@ Hoặc dán toàn bộ đoạn văn bài đọc IELTS/TOEFL vào đây. AI sẽ 
                        </div>
 
                        <div className="space-y-1">
-                         <label className="text-[10px] font-bold uppercase tracking-widest opacity-60 flex items-center gap-1.5">
-                           <BookOpen className="w-3 h-3" /> Mặt sau (Nghĩa / Lời giải)
-                         </label>
+                         <div className="flex items-center justify-between">
+                           <label className="text-[10px] font-bold uppercase tracking-widest opacity-60 flex items-center gap-1.5">
+                             <BookOpen className="w-3 h-3" /> Mặt sau (Nghĩa / Lời giải)
+                           </label>
+                           <button
+                             type="button"
+                             onClick={handleGenerateManualBack}
+                             disabled={isGeneratingManualAi || !manualFront.trim()}
+                             className="px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-[10px] rounded flex items-center gap-1 transition disabled:opacity-50"
+                           >
+                             {isGeneratingManualAi ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                             AI Phân Tích
+                           </button>
+                         </div>
                          <textarea
                            rows={3}
                            className="w-full p-3 bg-white dark:bg-black/40 border border-stone-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-yellow-500/50 transition resize-none text-sm leading-relaxed"
@@ -2516,7 +2555,7 @@ Hoặc dán toàn bộ đoạn văn bài đọc IELTS/TOEFL vào đây. AI sẽ 
                                <p className="text-[10px] opacity-70 line-clamp-2 mt-0.5 leading-snug">{card.back}</p>
                              </div>
 
-                             <div className={`flex flex-col gap-1 ${editingManualId === card.id ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"} transition-opacity`}>
+                             <div className={`flex flex-col gap-1 transition-opacity opacity-100`}>
                                <button
                                  onClick={() => {
                                    setManualFront(card.front);

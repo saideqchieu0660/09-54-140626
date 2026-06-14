@@ -3010,6 +3010,34 @@ Do not include any markdown wrapper or extra text.`,
     }
   });
 
+  app.post("/api/automation/manual-define", async (req, res, next) => {
+    try {
+      const { front, wordForm } = req.body;
+      if (!front) {
+        return res.status(400).json({ error: true, message: "Thiếu từ khóa front." });
+      }
+
+      const responseText = await executeGeminiWithRetry(async (ai, keyState) => {
+          const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: `Bạn là một chuyên gia ngôn ngữ học. Hãy cung cấp định nghĩa/giải thích ngắn gọn, dễ hiểu và chính xác nhất cho từ/cụm từ sau.
+          
+Từ/Cụm từ: ${front}
+Từ loại/Ghi chú thêm: ${wordForm || "Không xác định"}
+
+Trả về nội dung giải thích trọn vẹn, không có lời chào hỏi dư thừa, không cần lặp lại từ khóa. Nội dung giải thích tập trung vào ý nghĩa cốt lõi và một số nét nghĩa phụ (nếu có phổ biến). Trả về dưới dạng thuần văn bản text, KHÔNG format gì thêm. Độ dài tối đa 50-70 chữ.`,
+          });
+        return response.text;
+      });
+
+      return res.json({ success: true, definition: (responseText as string).trim() });
+    } catch (err: any) {
+      console.error("Manual Define Error:", err);
+      // Let frontend handle the error explicitly.
+      return res.status(500).json({ error: true, message: err?.message || "Lỗi khi trích xuất định nghĩa." });
+    }
+  });
+
   // Automated JSON Syntax checking, repairing, and normalisation by AI
   app.post("/api/automation/validate-json", async (req, res, next) => {
     try {

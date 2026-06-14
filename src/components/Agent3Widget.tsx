@@ -528,13 +528,13 @@ export default function Agent3Widget() {
                        onClick={() => handleToggleResponseLength("super_detailed")}
                        className={cn(
                          "py-1 rounded text-[10px] font-bold transition-all cursor-pointer",
-                         responseLength === "debate"
+                         responseLength === "super_detailed"
                            ? "bg-yellow-500 text-black shadow-xs"
                            : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
                        )}
                        title="Siêu chi tiết - Phân tích sâu sắc cặn kẽ 100%"
                      >
-                       Tranh biện
+                       Siêu chi tiết
                      </button>
                    </div>
                  </div>

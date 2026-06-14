@@ -21,6 +21,7 @@ import { StudentBadges } from "../components/StudentBadges";
 import { DashboardSkeleton } from "../components/DashboardSkeleton";
 import { GlobalActivityFeed } from "../components/GlobalActivityFeed";
 import { OnboardingTour } from "../components/OnboardingTour";
+import { ItemLoreModal } from "../components/ItemLoreModal";
 import DocumentConverter from "../components/DocumentConverter";
 import ManualFlashcardImporter from "../components/ManualFlashcardImporter";
 import WeeklyStudyAnalyticsModal from "../components/WeeklyStudyAnalyticsModal";
@@ -244,6 +245,7 @@ export default function StudentDashboard() {
 
   const [quote] = useState(() => MOTIVATION_QUOTES[Math.floor(Math.random() * MOTIVATION_QUOTES.length)]);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [activeLoreItem, setActiveLoreItem] = useState<string | null>(null);
   
   const [activeTab, setActiveTab] = useState<"study" | "ranking" | "quiz" | "mock_exam_setup" | "settings" | "history" | "skill_tree" | "all_sets" | "groups" | "achievements" | "profile" | "create_deck" | "cyberpunk" | "shop">("study");
   const [selectedShopItem, setSelectedShopItem] = useState<{name: string; icon: any; iconColor: string; title: string; cost: number; desc: string; lore: string; actionText: string; bgEffect: string; onBuy: () => void} | null>(null);
@@ -2888,9 +2890,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
                     <Snowflake className="w-6 h-6 animate-spin-slow" />
                   </span>
-                  <span className="px-3 py-1 bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("aegis_shield")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded-full text-xs font-bold">
                     Minh Triết Bảo Hộ
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Tấm Khiên Của Aegis (Bảo Vệ Streak)</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -2931,9 +2938,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-purple-500/10 rounded-xl text-purple-500">
                     <Sparkles className="w-6 h-6 animate-pulse" />
                   </span>
-                  <span className="px-3 py-1 bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("ambrosia_nectar")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-full text-xs font-bold">
                     Thức Uống Thần Thánh
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Mật Hoa Ambrosia (+50 Điểm XP)</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -3060,9 +3072,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-amber-500/10 rounded-xl text-amber-500">
                     <Trophy className="w-6 h-6 animate-pulse" />
                   </span>
-                  <span className="px-3 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("athenas_salvation")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
                     Khai Sáng Đỉnh Cao
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Sự Cứu Rỗi Của Athena (Cấp Độ +1)</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -3099,9 +3116,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-cyan-500/10 rounded-xl text-cyan-500">
                     <Shield className="w-6 h-6" />
                   </span>
-                  <span className="px-3 py-1 bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("olympus_aura")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-bold">
                     Vinh Quang Cá Nhân
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Hào Quang Olympus (Khung Kim Cương)</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -3159,9 +3181,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
                     <Crown className="w-6 h-6 animate-pulse" />
                   </span>
-                  <span className="px-3 py-1 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("polymath_title")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-bold">
                     Danh Hiệu Danh Dự
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Phong Hiệu 'Học Giả Bách Khoa'</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -3218,9 +3245,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-red-500/10 rounded-xl text-red-500">
                     <Heart className="w-6 h-6 animate-pulse fill-current" />
                   </span>
-                  <span className="px-3 py-1 bg-red-500/20 text-red-700 dark:text-red-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("lionheart_icon")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-red-500/20 text-red-700 dark:text-red-300 rounded-full text-xs font-bold">
                     Trái Tim Dũng Cảm
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Trái Tim Sư Tử (Biểu Tượng Nhiệt Huyết)</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -3275,9 +3307,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-fuchsia-500/10 rounded-xl text-fuchsia-500">
                     <Crown className="w-6 h-6 animate-pulse" />
                   </span>
-                  <span className="px-3 py-1 bg-fuchsia-500/20 text-fuchsia-700 dark:text-fuchsia-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("pandoras_box")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-fuchsia-500/20 text-fuchsia-700 dark:text-fuchsia-300 rounded-full text-xs font-bold">
                     Vật Phẩm Hư Không
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Chiếc Hộp Pandora</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -3327,9 +3364,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-rose-500/10 rounded-xl text-rose-500">
                     <Activity className="w-6 h-6 animate-pulse" />
                   </span>
-                  <span className="px-3 py-1 bg-rose-500/20 text-rose-700 dark:text-rose-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("level_sacrifice")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-rose-500/20 text-rose-700 dark:text-rose-300 rounded-full text-xs font-bold">
                     Cấm Thuật
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Hiến Tế Cấp Độ</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -3367,9 +3409,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-orange-500/10 rounded-xl text-orange-500">
                     <Flame className={user?.activeChallenge?.status === 'active' ? 'w-6 h-6 animate-pulse text-amber-500' : 'w-6 h-6 animate-bounce'} />
                   </span>
-                  <span className="px-3 py-1 bg-orange-500/20 text-orange-700 dark:text-orange-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("prometheus_fire")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-orange-500/20 text-orange-700 dark:text-orange-300 rounded-full text-xs font-bold">
                     {user?.activeChallenge?.type === 'streak_10' ? 'Thử Thách Đang Chạy' : 'Thử Thách Khắc Kỷ'}
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Ngọn Lửa Prometheus (+10 Lv)</h4>
                 
@@ -3528,9 +3575,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-rose-500/10 rounded-xl text-rose-500">
                     <Award className="w-6 h-6 animate-pulse" />
                   </span>
-                  <span className="px-3 py-1 bg-rose-500/20 text-rose-700 dark:text-rose-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("philosopher_king_crown")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-rose-500/20 text-rose-700 dark:text-rose-300 rounded-full text-xs font-bold">
                     Vinh Dự Tối Cao
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Vương Miện 'Quân Vương Triết Học'</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -3587,9 +3639,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
                     <Cpu className="w-6 h-6 animate-pulse" />
                   </span>
-                  <span className="px-3 py-1 bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("united_engine_core")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded-full text-xs font-bold">
                     Trí Tuệ Nhân Tạo
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Lõi Năng Lượng United Engine (+1 Lượt)</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -3643,9 +3700,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-indigo-500/10 rounded-xl text-indigo-500">
                     <Zap className="w-6 h-6 animate-pulse" />
                   </span>
-                  <span className="px-3 py-1 bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("intellect_elixir")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-bold">
                     Buff Kinh Nghiệm
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Nước Tăng Lực Tri Thức (x2 XP)</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -3693,9 +3755,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-slate-500/10 rounded-xl text-slate-500">
                     <Ghost className="w-6 h-6 animate-pulse" />
                   </span>
-                  <span className="px-3 py-1 bg-slate-500/20 text-slate-700 dark:text-slate-300 rounded-full text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("anonymous_mask")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-slate-500/20 text-slate-700 dark:text-slate-300 rounded-full text-xs font-bold">
                     Tàng Hình
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-bold mb-1 text-stone-800 dark:text-stone-200">Mặt Nạ Ẩn Danh</h4>
                 <p className="text-xs opacity-70 mb-4 min-h-[40px]">
@@ -3743,9 +3810,14 @@ export default function StudentDashboard() {
                   <span className="p-3 bg-red-600/20 rounded-xl text-red-600">
                     <ShieldAlert className="w-6 h-6 animate-pulse" />
                   </span>
-                  <span className="px-3 py-1 bg-red-600/20 text-red-800 dark:text-red-300 rounded-full text-xs font-black">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setActiveLoreItem("almighty_scepter")} className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Tìm hiểu thêm
+                    </button>
+                    <span className="px-3 py-1 bg-red-600/20 text-red-800 dark:text-red-300 rounded-full text-xs font-black">
                     Thống Khổ
                   </span>
+                  </div>
                 </div>
                 <h4 className="text-lg font-black mb-1 text-red-700 dark:text-red-400">Quyền Trượng Đấng Toàn Năng</h4>
                 <p className="text-xs opacity-80 mb-4 min-h-[40px] text-red-900/80 dark:text-red-200/80 font-medium">
@@ -5061,6 +5133,13 @@ export default function StudentDashboard() {
         onClose={() => setIsWeeklyStudyModalOpen(false)}
         userId={user?.id || ""}
       />
+
+      {activeLoreItem && (
+        <ItemLoreModal
+          itemKey={activeLoreItem}
+          onClose={() => setActiveLoreItem(null)}
+        />
+      )}
 
       {/* Quick-View Droplist / Modal Kính Mờ for Thẻ Nhắc Nhở */}
       <AnimatePresence>
