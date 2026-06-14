@@ -315,6 +315,10 @@ export async function syncUserToFirebase() {
         isSchoolLover: !!currentUser.isSchoolLover,
         doubleXPUntil: currentUser.doubleXPUntil || 0,
         hideRankUntil: currentUser.hideRankUntil || 0,
+        argusEyesUntil: currentUser.argusEyesUntil || 0,
+        achillesUntil: currentUser.achillesUntil || 0,
+        averageMastery: currentUser.averageMastery || 0,
+        top1Weeks: currentUser.top1Weeks || 0,
         level: currentUser.level || 1,
         avatarBorder: currentUser.avatarBorder || "none",
         title: currentUser.title || "",
@@ -412,6 +416,12 @@ export const store = {
             if (typeof profile.streakFreezeCount === 'number') u.streakFreezeCount = profile.streakFreezeCount;
             if (typeof profile.doubleXPUntil === 'number') u.doubleXPUntil = profile.doubleXPUntil;
             if (typeof profile.hideRankUntil === 'number') u.hideRankUntil = profile.hideRankUntil;
+            if (typeof profile.argusEyesUntil === 'number') u.argusEyesUntil = profile.argusEyesUntil;
+            if (typeof profile.achillesUntil === 'number') u.achillesUntil = profile.achillesUntil;
+            if (typeof profile.averageMastery === 'number') u.averageMastery = profile.averageMastery;
+            if (typeof profile.top1Weeks === 'number') u.top1Weeks = profile.top1Weeks;
+            if (profile.activeChallenge) u.activeChallenge = profile.activeChallenge;
+            if (typeof profile.unitedEngineUses === 'number') u.unitedEngineUses = profile.unitedEngineUses;
         } else {
             // Chưa có profile trên firestore, lưu quả profile mặc định đầu tiên lên (chỉ người dùng thật)
             if (!firebaseUser.isAnonymous) {

@@ -1361,14 +1361,24 @@ Extract all items into the \`data\` array matching this exact vocabulary schema:
           // Fallback Trigger: OCR Processing
           if (parsedPagesText.join("").trim().length === 0) {
             pushLog("⚠️ Phát hiện PDF dạng ảnh/quét. Kích hoạt Anti-Image-PDF Tesseract.js OCR Engine...");
-            setProgressText("Khởi tạo OCR Engine...");
+
+            const workerCount = Math.max(1, Math.min(navigator.hardwareConcurrency ? navigator.hardwareConcurrency - 1 : 2, 4));
+            setProgressText(`Khởi tạo OCR đa luồng (${workerCount} luồng)...`);
+            pushLog(`⚙️ Khởi tạo ${workerCount} OCR Workers & Tối ưu Scale render...`);
             
-            const worker = await createWorker('vie+eng');
+            const workers = await Promise.all(
+              Array(workerCount).fill(0).map(() => createWorker('vie+eng'))
+            );
+            
             let ocrText = "";
-            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-              setProgressText(`OCR trang [${pageNum}/${totalPages}]...`);
+            let processedPages = 0;
+            const results: {pageNum: number, text: string}[] = [];
+            const queue = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+            const processPage = async (pageNum: number, worker: any) => {
               const page = await pdf.getPage(pageNum);
-              const viewport = page.getViewport({ scale: 2.0 });
+              // Giới hạn scale xuống 1.5 để tối giảm ~44% số pixel cần xử lý so với 2.0
+              const viewport = page.getViewport({ scale: 1.5 });
               const canvas = document.createElement("canvas");
               const context = canvas.getContext("2d");
               canvas.height = viewport.height;
@@ -1376,13 +1386,32 @@ Extract all items into the \`data\` array matching this exact vocabulary schema:
               await page.render({ canvasContext: context!, viewport }).promise;
               
               const { data: { text } } = await worker.recognize(canvas);
-              ocrText += text + "\n\n";
-            }
-            await worker.terminate();
+              
+              processedPages++;
+              setProgressText(`OCR trang [${processedPages}/${totalPages}]...`);
+              
+              return { pageNum, text };
+            };
+
+            const workerTasks = workers.map(async (worker) => {
+              while (queue.length > 0) {
+                const pageNum = queue.shift();
+                if (pageNum !== undefined) {
+                  const res = await processPage(pageNum, worker);
+                  results.push(res);
+                }
+              }
+            });
+
+            await Promise.all(workerTasks);
+            await Promise.all(workers.map(w => w.terminate()));
+
+            results.sort((a, b) => a.pageNum - b.pageNum);
+            ocrText = results.map(r => r.text).join("\n\n");
             
             if (ocrText.trim()) {
               parsedPagesText.push(ocrText);
-              pushLog("✅ Hoàn tất bóc tách dữ liệu bằng OCR.");
+              pushLog(`✅ Hoàn tất siêu tốc bằng Multithreading & Scale Optimize.`);
             }
           }
           
