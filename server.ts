@@ -1177,10 +1177,13 @@ app.post("/api/proxy/openrouter", async (req, res, next) => {
         let aiLimitUsedToday = 0;
         let lastAiUsedDate = todayStr;
 
+        let unitedEngineUses = 0;
+
         if (docSnap.exists) {
           const data = docSnap.data();
           lastAiUsedDate = data?.lastAiUsedDate || todayStr;
           aiLimitUsedToday = data?.aiLimitUsedToday || 0;
+          unitedEngineUses = typeof data?.unitedEngineUses === 'number' ? data.unitedEngineUses : 0;
           
           if (lastAiUsedDate !== todayStr) {
             // New day, reset quota
@@ -1190,13 +1193,22 @@ app.post("/api/proxy/openrouter", async (req, res, next) => {
         }
 
         if (aiLimitUsedToday >= AI_QUOTA_LIMIT) {
-          return { 
-            allowed: false, 
-            message: `Bạn đã dùng hết hạn mức AI miễn phí trong ngày hôm nay (${AI_QUOTA_LIMIT}/${AI_QUOTA_LIMIT} lượt). Hãy nâng cấp tài khoản lên PRO hoặc liên hệ Giáo viên/Admin để tiếp tục sử dụng tính năng cao cấp không giới hạn!`
-          };
+          if (unitedEngineUses > 0) {
+            // Vượt hạn mức nhưng có lượt United Engine, trừ đi 1 lượt thay vì tăng limit
+            unitedEngineUses -= 1;
+            await userRef.set({
+              unitedEngineUses
+            }, { merge: true });
+            return { allowed: true, used: aiLimitUsedToday };
+          } else {
+            return { 
+              allowed: false, 
+              message: `Bạn đã dùng hết hạn mức AI miễn phí trong ngày hôm nay (${AI_QUOTA_LIMIT}/${AI_QUOTA_LIMIT} lượt). Hãy tiếp tục dùng Lõi Năng Lượng United Engine, nâng cấp tài khoản lên PRO hoặc liên hệ Giáo viên/Admin để tiếp tục sử dụng!`
+            };
+          }
         }
 
-        // Increment quota used
+        // Tăng quá trình sử dụng thường ngày
         aiLimitUsedToday += 1;
         await userRef.set({
           aiLimitUsedToday,
