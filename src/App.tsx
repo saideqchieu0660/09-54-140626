@@ -37,6 +37,7 @@ import { AppUpdateNotification } from "./components/AppUpdateNotification";
 import { AutoRefreshBadge } from "./components/AutoRefreshBadge";
 import { ForceRefreshButton } from "./components/ForceRefreshButton";
 import { ShortcutsHelpModal } from "./components/ShortcutsHelpModal";
+import { ConfirmModal } from "./components/ConfirmModal";
 import { Keyboard } from "lucide-react";
 
 const PageLoader = () => (
@@ -81,6 +82,9 @@ function Layout({ children }: { children: React.ReactNode }) {
   const [adminKeyInput, setAdminKeyInput] = useState("");
   const [isVerifyingAdmin, setIsVerifyingAdmin] = useState(false);
   const [adminVerifyResult, setAdminVerifyResult] = useState<{success?: boolean; message?: string} | null>(null);
+  
+  const [showSyncConfirm, setShowSyncConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleVerifyAdminKey = async () => {
      if (!adminKeyInput.trim() || !user) return;
@@ -1361,7 +1365,10 @@ function Layout({ children }: { children: React.ReactNode }) {
                                  </div>
                               </div>
                               <button 
-                                 onClick={handleForceSync}
+                                 onClick={() => {
+                                     setShowSettingsModal(false);
+                                     setShowSyncConfirm(true);
+                                 }}
                                  disabled={isSyncing}
                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 ${
                                     syncSuccess 
@@ -1394,7 +1401,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                          <button 
                             onClick={async () => {
                                setShowSettingsModal(false);
-                               await handleLogout(true);
+                               setShowLogoutConfirm(true);
                             }}
                             className="w-full flex items-center justify-between p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-amber-500 transition group cursor-pointer"
                          >
@@ -1408,7 +1415,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                         <button 
                            onClick={() => {
                               setShowSettingsModal(false);
-                              handleLogout();
+                              setShowLogoutConfirm(true);
                            }}
                            className="w-full flex items-center justify-between p-4 rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-500 transition group cursor-pointer"
                         >
@@ -1425,6 +1432,24 @@ function Layout({ children }: { children: React.ReactNode }) {
             </motion.div>
          )}
       </AnimatePresence>
+      <ConfirmModal
+        isOpen={showSyncConfirm}
+        onClose={() => setShowSyncConfirm(false)}
+        onConfirm={handleForceSync}
+        title="Xác nhận đồng bộ"
+        message="Thao tác này sẽ ghi đè thiết lập cục bộ và tải lại toàn bộ tiến độ, điểm số, và dữ liệu thẻ từ đám mây (Cloud). Bạn có chắc chắn muốn tiến hành?"
+        confirmText="Đồng Bộ"
+        isDestructive={false}
+      />
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={() => handleLogout(!user?.isAnonymous)}
+        title="Xác nhận đăng xuất"
+        message={user?.isAnonymous ? "Bạn đang ở chế độ khách. Đăng xuất sẽ tạo tài khoản mới và bạn có thể bị mất quyền truy cập vào dữ liệu khách nếu không liên kết. Khuyến nghị sao lưu dữ liệu trước." : "Bạn có chắc chắn muốn đăng xuất khỏi thiết bị này? Nếu đăng xuất, các tiến trình chưa học xong có thể bị mất."}
+        confirmText="Đăng xuất"
+        isDestructive={true}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
-import { Play, BookOpen, Search, X, ChevronLeft, ChevronRight, Sparkles, Pin, PinOff } from 'lucide-react';
+import { Play, BookOpen, Search, X, ChevronLeft, ChevronRight, Sparkles, Pin, PinOff, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Deck, store } from '../lib/store';
 
@@ -304,6 +304,15 @@ export const DeckList = ({ decks, showSearch = true, groupBySubject = false, onC
                     {subjectDecks.map((deck, idx) => {
                       const masteredCount = deck.cards.filter(c => c.mastery >= 80).length;
                       const masteryRate = deck.cards.length > 0 ? Math.round((masteredCount / deck.cards.length) * 100) : 0;
+                      
+                      const estimatedSeconds = deck.cards.reduce((acc, card) => {
+                          const m = card.mastery || 0;
+                          if (m >= 80) return acc + 10;
+                          if (m >= 50) return acc + 25;
+                          if (m >= 20) return acc + 40;
+                          return acc + 60;
+                      }, 0);
+                      const estimatedMinutes = Math.ceil(estimatedSeconds / 60);
 
                       return (
                         <TiltCard key={deck.id} delayIdx={idx} className="w-[85vw] sm:w-[380px] shrink-0 snap-start h-auto">
@@ -323,6 +332,10 @@ export const DeckList = ({ decks, showSearch = true, groupBySubject = false, onC
                               <span className="text-base sm:text-l font-mono font-black opacity-85 uppercase tracking-widest leading-relaxed">{deck.subject || "Tự chọn"}</span>
                               <span className="text-sm sm:text-base px-4 py-2.5 rounded-xl font-mono font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border-2 border-amber-500/20 leading-relaxed">
                                 {getCreatorLabel(deck)}
+                              </span>
+                              <span className="flex items-center gap-1.5 text-sm sm:text-base px-4 py-2.5 rounded-xl font-mono font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-2 border-emerald-500/20 leading-relaxed">
+                                <Clock className="w-4 h-4" />
+                                {estimatedMinutes > 0 ? `~${estimatedMinutes}p` : `<1p`}
                               </span>
                             </div>
                             
@@ -359,6 +372,15 @@ export const DeckList = ({ decks, showSearch = true, groupBySubject = false, onC
               {sortedAndFilteredDecks.map((deck, idx) => {
                 const masteredCount = deck.cards.filter(c => c.mastery >= 80).length;
                 const masteryRate = deck.cards.length > 0 ? Math.round((masteredCount / deck.cards.length) * 100) : 0;
+                
+                const estimatedSeconds = deck.cards.reduce((acc, card) => {
+                    const m = card.mastery || 0;
+                    if (m >= 80) return acc + 10;
+                    if (m >= 50) return acc + 25;
+                    if (m >= 20) return acc + 40;
+                    return acc + 60;
+                }, 0);
+                const estimatedMinutes = Math.ceil(estimatedSeconds / 60);
 
                 return (
                   <TiltCard key={deck.id} delayIdx={idx}>
@@ -379,6 +401,10 @@ export const DeckList = ({ decks, showSearch = true, groupBySubject = false, onC
                         <span className="text-base sm:text-xl font-mono font-black opacity-85 uppercase tracking-widest leading-relaxed">{deck.subject || "Tự chọn"}</span>
                         <span className="text-sm sm:text-base px-4 py-2.5 rounded-xl font-mono font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border-2 border-amber-500/20 leading-relaxed">
                           {getCreatorLabel(deck)}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-sm sm:text-base px-4 py-2.5 rounded-xl font-mono font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-2 border-emerald-500/20 leading-relaxed">
+                          <Clock className="w-4 h-4" />
+                          {estimatedMinutes > 0 ? `~${estimatedMinutes}p` : `<1p`}
                         </span>
                       </div>
                       
