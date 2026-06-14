@@ -1,6 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Link, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, LogOut, MessageCircle, Flame, Volume2, VolumeX, Home, BookOpen, Shield, User as UserIcon, Settings, X, ChevronRight, Cpu, RefreshCw, Check, Maximize, Minimize, Sparkles } from "lucide-react";
+import { Moon, Sun, LogOut, MessageCircle, Flame, Volume2, VolumeX, Home, BookOpen, Shield, User as UserIcon, Settings, X, ChevronRight, Cpu, RefreshCw, Check, Maximize, Minimize, Sparkles, Key } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTheme, ThemeProvider } from "./components/ThemeProvider";
 import { SoundProvider, useSoundContext } from "./components/SoundProvider";
@@ -78,6 +78,38 @@ function Layout({ children }: { children: React.ReactNode }) {
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
+  const [adminKeyInput, setAdminKeyInput] = useState("");
+  const [isVerifyingAdmin, setIsVerifyingAdmin] = useState(false);
+  const [adminVerifyResult, setAdminVerifyResult] = useState<{success?: boolean; message?: string} | null>(null);
+
+  const handleVerifyAdminKey = async () => {
+     if (!adminKeyInput.trim() || !user) return;
+     setIsVerifyingAdmin(true);
+     setAdminVerifyResult(null);
+     try {
+         const verifyRes = await fetch('/api/auth/escalate-role', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ uid: user.uid, providedKey: adminKeyInput })
+         }).then(res => res.json());
+
+         if (verifyRes.success) {
+             setAdminVerifyResult({ success: true, message: "Mã hợp lệ! Đã nâng cấp phân quyền thành công! Vui lòng làm lại trang." });
+             if (verifyRes.role === "Admin" || verifyRes.role === "admin" || verifyRes.role === "teacher") {
+                sessionStorage.setItem('adminToken', 'true');
+             }
+             // Cập nhật local store
+             store.updateCurrentUser({ role: verifyRes.role || "student", isPro: verifyRes.isPro ?? true });
+             setTimeout(() => window.location.reload(), 1500);
+         } else {
+             setAdminVerifyResult({ success: false, message: "Mã phân quyền không đúng." });
+         }
+     } catch (e: any) {
+         setAdminVerifyResult({ success: false, message: e.message || "Đã xảy ra lỗi" });
+     } finally {
+         setIsVerifyingAdmin(false);
+     }
+  };
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -782,7 +814,7 @@ function Layout({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, [user?.uid]);
 
-  const handleLogout = async () => {
+  const handleLogout = async (redirectToAuth: boolean = true) => {
     try {
       // Clean up co-study room presence before losing auth context
       if (auth.currentUser?.uid) {
@@ -808,7 +840,11 @@ function Layout({ children }: { children: React.ReactNode }) {
           await signOut(auth);
       }
       store.logout();
-      navigate("/");
+      if (redirectToAuth) {
+         navigate("/auth");
+      } else {
+         navigate("/");
+      }
     } catch (e) {
       console.error("Error signing out:", e);
     }
@@ -1163,9 +1199,41 @@ function Layout({ children }: { children: React.ReactNode }) {
 
                      <div className="space-y-4">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500">Người Dùng</h4>
-                        <div className="p-4 rounded-xl bg-stone-50 dark:bg-zinc-800/50 border border-stone-200 dark:border-zinc-700">
-                           <p className="font-bold text-stone-900 dark:text-white truncate">{user?.email}</p>
-                           <p className="text-xs text-stone-500 mt-1 capitalize">Role: {currentUserObj?.role || 'Student'}</p>
+                        <div className="p-4 rounded-xl bg-stone-50 dark:bg-zinc-800/50 border border-stone-200 dark:border-zinc-700 flex flex-col gap-3">
+                           <div>
+                              <p className="font-bold text-stone-900 dark:text-white truncate">{user?.email}</p>
+                              <p className="text-xs text-stone-500 mt-1 capitalize">Role: {currentUserObj?.role || 'Student'}</p>
+                           </div>
+
+                           {!isUserAdminOrTeacher && (
+                              <div className="pt-3 border-t border-stone-200 dark:border-zinc-700 space-y-2">
+                                 <p className="text-xs text-stone-600 dark:text-stone-400 font-medium">Nhập mã phân quyền để nâng cấp (dành cho Giáo viên/Admin):</p>
+                                 <div className="flex items-center gap-2">
+                                    <div className="relative flex-grow">
+                                       <Key className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                       <input 
+                                          type="password"
+                                          placeholder="Mã phân quyền" 
+                                          value={adminKeyInput}
+                                          onChange={(e) => setAdminKeyInput(e.target.value)}
+                                          className="w-full pl-9 pr-3 py-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-sm focus:outline-none focus:border-amber-500 transition-colors placeholder:text-stone-400"
+                                       />
+                                    </div>
+                                    <button 
+                                       onClick={handleVerifyAdminKey}
+                                       disabled={isVerifyingAdmin || !adminKeyInput.trim()}
+                                       className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold rounded-lg transition-colors shrink-0 disabled:opacity-50 flex items-center justify-center gap-1 min-w-[70px]"
+                                    >
+                                       {isVerifyingAdmin ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Xác nhận"}
+                                    </button>
+                                 </div>
+                                 {adminVerifyResult && (
+                                    <p className={`text-[10px] font-bold ${adminVerifyResult.success ? 'text-green-500' : 'text-rose-500'}`}>
+                                       {adminVerifyResult.message}
+                                    </p>
+                                 )}
+                              </div>
+                           )}
                         </div>
                      </div>
 
@@ -1326,8 +1394,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                          <button 
                             onClick={async () => {
                                setShowSettingsModal(false);
-                               navigate('/auth');
-                               await handleLogout();
+                               await handleLogout(true);
                             }}
                             className="w-full flex items-center justify-between p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-amber-500 transition group cursor-pointer"
                          >
