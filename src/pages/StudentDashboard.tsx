@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { store, Deck, saveLocalUserDecks } from "../lib/store";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { Plus, X, Play, TrendingUp, Users, Target, BookOpen, BrainCircuit, Activity, Flame, ArrowLeft, CheckCircle2, XCircle, ArrowRight, Loader2, Trophy, Sparkles, Maximize2, Minimize2, Bell, BellOff, BellRing, Settings, AlertTriangle, Trash2, Snowflake, Volume2, VolumeX, Clock, Network, Award, Bot, User, Crown, ChevronUp, ChevronDown, Minus, Shield, RefreshCw, Heart, LogOut, Bug, Type, Library, Camera, Edit3, HelpCircle, Cpu, ShoppingBag, Lock, Zap, Ghost, ShieldAlert, Eye } from "lucide-react";
+import { Plus, X, Play, TrendingUp, Users, Target, BookOpen, BrainCircuit, Activity, Flame, ArrowLeft, CheckCircle2, XCircle, ArrowRight, Loader2, Trophy, Sparkles, Maximize2, Minimize2, Bell, BellOff, BellRing, Settings, AlertTriangle, Trash2, Snowflake, Volume2, VolumeX, Clock, Network, Award, Bot, User, Crown, ChevronUp, ChevronDown, Minus, Shield, RefreshCw, Heart, LogOut, Bug, Type, Library, Camera, Edit3, HelpCircle, Cpu, ShoppingBag, Lock, Zap, Ghost, ShieldAlert, Eye, BarChart3 } from "lucide-react";
 import { MarcusAureliusIcon } from "../components/MarcusAureliusIcon";
 import { cn } from "../lib/utils";
 import { safeRequest } from "../utils/apiClient";
@@ -25,6 +25,7 @@ import { ItemLoreModal } from "../components/ItemLoreModal";
 import DocumentConverter from "../components/DocumentConverter";
 import ManualFlashcardImporter from "../components/ManualFlashcardImporter";
 import WeeklyStudyAnalyticsModal from "../components/WeeklyStudyAnalyticsModal";
+import { DetailedStatsModal } from "../components/DetailedStatsModal";
 import { useTheme } from "../components/ThemeProvider";
 import { CyberCard } from "../components/CyberCard";
 import { CinematicContainer } from "../components/CinematicContainer";
@@ -311,6 +312,7 @@ export default function StudentDashboard() {
   const [isChartExpanded, setIsChartExpanded] = useState(false);
   const [chartPeriod, setChartPeriod] = useState<"7_days" | "30_days" | "all_time">("7_days");
   const [isWeeklyStudyModalOpen, setIsWeeklyStudyModalOpen] = useState(false);
+  const [isDetailedStatsModalOpen, setIsDetailedStatsModalOpen] = useState(false);
   const [showEnvDebug, setShowEnvDebug] = useState(false);
   const [localFontSize, setLocalFontSize] = useState<number>(() => {
     const saved = localStorage.getItem("henosis-font-size");
@@ -2440,7 +2442,24 @@ export default function StudentDashboard() {
                  <div className="text-4xl font-mono font-bold text-amber-600 dark:text-amber-400 mb-2 mt-2">
                     {studyHours}h {studyMinutes}m
                  </div>
-                 <p className="text-[10px] uppercase font-bold tracking-wider text-amber-600 dark:text-amber-400 mt-1 opacity-80 group-hover:underline">Xem biểu đồ chi tiết &gt;</p>
+                 <p className="text-[10px] uppercase font-bold tracking-wider text-amber-600 dark:text-amber-400 mt-1 opacity-80 group-hover:underline">Xem biểu đồ giờ học &gt;</p>
+              </div>
+            </section>
+
+            <section 
+              onClick={() => setIsDetailedStatsModalOpen(true)}
+              className="glass p-6 rounded-xl cursor-pointer hover:scale-[1.02] active:scale-[0.99] transition-all duration-300 relative group overflow-hidden"
+              id="detailed-stats-card"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+              <h3 className="text-xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-700 via-violet-500 to-indigo-600 dark:from-violet-300 dark:via-violet-400 dark:to-indigo-400 mb-4 flex items-center gap-2 relative z-10">
+                <BarChart3 className="w-5 h-5 text-violet-500 group-hover:rotate-12 transition-transform duration-300" /> Thống Kê Thẻ Học (7 ngày)
+              </h3>
+              <div className="flex flex-col items-center justify-center p-4 bg-stone-200/60 dark:bg-zinc-800/50 rounded-xl border border-violet-600/20 dark:border-violet-500/30 shadow-inner relative z-10">
+                 <div className="text-4xl font-mono font-bold text-violet-600 dark:text-violet-400 mb-2 mt-2">
+                    {dailyReviewed}
+                 </div>
+                 <p className="text-[10px] uppercase font-bold tracking-wider text-violet-600 dark:text-violet-400 mt-1 opacity-80 group-hover:underline">Xem biểu đồ tiến trình thẻ &gt;</p>
               </div>
             </section>
 
@@ -5131,6 +5150,12 @@ export default function StudentDashboard() {
       <WeeklyStudyAnalyticsModal 
         isOpen={isWeeklyStudyModalOpen}
         onClose={() => setIsWeeklyStudyModalOpen(false)}
+        userId={user?.id || ""}
+      />
+
+      <DetailedStatsModal
+        isOpen={isDetailedStatsModalOpen}
+        onClose={() => setIsDetailedStatsModalOpen(false)}
         userId={user?.id || ""}
       />
 

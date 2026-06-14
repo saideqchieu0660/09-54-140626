@@ -28,6 +28,7 @@ import {
   Save
 } from "lucide-react";
 import { cn } from "../lib/utils";
+import localforage from "localforage";
 import ErrorNotification from "./ErrorNotification";
 import { store, Deck } from "../lib/store";
 import { db, auth } from "../lib/firebase";
@@ -790,28 +791,30 @@ Extract all items into the \`data\` array matching this exact vocabulary schema:
   }, [extractedCards?.length]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("costudy_unified_convert_session");
-    if (saved) {
+    const loadSession = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed.chunks) && parsed.chunks.length > 0) {
-          // Check session expiration (safely destroy after 24h)
-          if (parsed.createdAt && Date.now() - parsed.createdAt > 24 * 60 * 60 * 1050) {
-            localStorage.removeItem("costudy_unified_convert_session");
-          } else {
-            setActiveSession(parsed);
-            setDeckTitle(parsed.deckTitle || "");
-            setDeckSubject(parsed.deckSubject || "");
-            setActiveImportTab(parsed.importTab || "file");
-            if (parsed.allGeneratedCards && parsed.allGeneratedCards.length > 0) {
-              setExtractedCards(parsed.allGeneratedCards);
+        const parsed = await localforage.getItem<any>("costudy_unified_convert_session");
+        if (parsed) {
+          if (parsed && Array.isArray(parsed.chunks) && parsed.chunks.length > 0) {
+            // Check session expiration (safely destroy after 24h)
+            if (parsed.createdAt && Date.now() - parsed.createdAt > 24 * 60 * 60 * 1050) {
+              await localforage.removeItem("costudy_unified_convert_session");
+            } else {
+              setActiveSession(parsed);
+              setDeckTitle(parsed.deckTitle || "");
+              setDeckSubject(parsed.deckSubject || "");
+              setActiveImportTab(parsed.importTab || "file");
+              if (parsed.allGeneratedCards && parsed.allGeneratedCards.length > 0) {
+                setExtractedCards(parsed.allGeneratedCards);
+              }
             }
           }
         }
       } catch (e) {
         console.error("Failed to recover conversion cache state:", e);
       }
-    }
+    };
+    loadSession();
   }, []);
 
   // Drag and drop zone handlers
@@ -952,10 +955,8 @@ Extract all items into the \`data\` array matching this exact vocabulary schema:
         
         setActiveSession(checkpointSession);
         
-        try {
-          localStorage.setItem("costudy_unified_convert_session", JSON.stringify(checkpointSession));
-        } catch (storageErr) {
-          console.warn("Storage quota exceeded in localStorage, saving minimal checkpoint...", storageErr);
+        localforage.setItem("costudy_unified_convert_session", checkpointSession).catch(storageErr => {
+          console.warn("Storage quota exceeded in localforage, saving minimal checkpoint...", storageErr);
           // Lưu tối giản nhất để bằng mọi giá không bị đứng tiến trình
           const minimalSession = {
             importTab: sessionData.importTab,
@@ -968,10 +969,12 @@ Extract all items into the \`data\` array matching this exact vocabulary schema:
             allGeneratedCards: combined,
             logs: []
           };
-          localStorage.setItem("costudy_unified_convert_session", JSON.stringify(minimalSession));
-        }
+          localforage.setItem("costudy_unified_convert_session", minimalSession).catch(err => {
+            console.error("Non-fatal checkpoint save failed. Sưu tập thẻ vẫn hoạt động bình thường:", err);
+          });
+        });
       } catch (err) {
-        console.error("Non-fatal checkpoint save failed. Sưu tập thẻ vẫn hoạt động bình thường:", err);
+        console.error("Non-fatal checkpoint sync logic failed:", err);
       }
     };
 
@@ -1219,7 +1222,7 @@ Extract all items into the \`data\` array matching this exact vocabulary schema:
       } else {
         setError("Công đoạn hoàn thành nhưng không tìm thấy dữ liệu thẻ học hợp chuẩn.");
       }
-      localStorage.removeItem("costudy_unified_convert_session");
+      localforage.removeItem("costudy_unified_convert_session").catch(console.error);
       setActiveSession(null);
     }
   };
@@ -1619,7 +1622,11 @@ Extract all items into the \`data\` array matching this exact vocabulary schema:
       }
 
       setActiveSession(sessionData);
-      localStorage.setItem("costudy_unified_convert_session", JSON.stringify(sessionData));
+      try {
+        await localforage.setItem("costudy_unified_convert_session", sessionData);
+      } catch (storageErr) {
+        console.warn("Storage quota exceeded on initial save. Running in RAM only.", storageErr);
+      }
 
       // Launch sequential worker
       await processChunksSequentially(sessionData);
@@ -1713,7 +1720,7 @@ Extract all items into the \`data\` array matching this exact vocabulary schema:
 
   const handleCancelSession = () => {
     isCancelledRef.current = true;
-    localStorage.removeItem("costudy_unified_convert_session");
+    localforage.removeItem("costudy_unified_convert_session").catch(console.error);
     setActiveSession(null);
     setExtractedCards(null);
     setSuccessCount(null);

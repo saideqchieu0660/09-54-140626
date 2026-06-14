@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { store, Deck } from "../lib/store";
-import { FileText, Upload, AlertCircle, AlertTriangle, BarChart3, Users, CheckCircle2, TrendingUp, Target, FileUp, BookOpen, Shield, Trash2, FolderOpen, Inbox, Layers, Settings, Check, X, RefreshCw, Plus, Heart, LogOut, ChevronDown, ChevronUp, Lock, Sparkles } from "lucide-react";
+import { FileText, Upload, AlertCircle, AlertTriangle, BarChart3, Users, CheckCircle2, TrendingUp, Target, FileUp, Activity, BookOpen, Shield, Trash2, FolderOpen, Inbox, Layers, Settings, Check, X, RefreshCw, Plus, Heart, LogOut, ChevronDown, ChevronUp, Lock, Sparkles } from "lucide-react";
 import { Navigate, Link } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { safeRequest } from "../utils/apiClient";
@@ -64,6 +64,8 @@ export default function TeacherDashboard() {
   const [rewardTargetId, setRewardTargetId] = useState("");
   const [rewardPoints, setRewardPoints] = useState("");
   const [rewardLevels, setRewardLevels] = useState("");
+  const [rewardStreak, setRewardStreak] = useState("");
+  const [rewardStudyMinutes, setRewardStudyMinutes] = useState("");
   const [isDispatchingReward, setIsDispatchingReward] = useState(false);
   const [rewardMessage, setRewardMessage] = useState("");
 
@@ -81,36 +83,53 @@ export default function TeacherDashboard() {
       
       const addPoints = parseInt(rewardPoints, 10) || 0;
       const addLevel = parseInt(rewardLevels, 10) || 0;
+      const addStreak = parseInt(rewardStreak, 10) || 0;
+      const addStudyMinutes = parseInt(rewardStudyMinutes, 10) || 0;
       
       const currentPoints = chosenUser.points || 0;
       const currentLevel = chosenUser.level || 1;
+      const currentStreak = chosenUser.streak || 0;
+      const currentStudyMinutes = chosenUser.studyMinutes || 0;
       
       const updatedPoints = Math.max(0, currentPoints + addPoints);
       const updatedLevel = Math.max(1, currentLevel + addLevel);
+      const updatedStreak = Math.max(0, currentStreak + addStreak);
+      const updatedStudyMinutes = Math.max(0, currentStudyMinutes + addStudyMinutes);
       
       await dbService.updateUserProfile(rewardTargetId, {
         points: updatedPoints,
-        level: updatedLevel
+        level: updatedLevel,
+        streak: updatedStreak,
+        studyMinutes: updatedStudyMinutes
       });
       
       // Update local state list
-      setDbUsers(prev => prev.map(u => u.id === rewardTargetId ? { ...u, points: updatedPoints, level: updatedLevel } : u));
+      setDbUsers(prev => prev.map(u => u.id === rewardTargetId ? { 
+          ...u, 
+          points: updatedPoints, 
+          level: updatedLevel,
+          streak: updatedStreak,
+          studyMinutes: updatedStudyMinutes
+      } : u));
       
       // If of current Admin
       if (user && rewardTargetId === user.id) {
         store.updateCurrentUser({
           points: updatedPoints,
-          level: updatedLevel
+          level: updatedLevel,
+          streak: updatedStreak
         });
         
         window.dispatchEvent(new CustomEvent("henosis-data-synced"));
       }
       
-      setRewardMessage(`Thành công! Đã ban tặng ${addPoints >= 0 ? '+' : ''}${addPoints} Tinh Hoa (PT) và ${addLevel >= 0 ? '+' : ''}${addLevel} cấp cấp độ (Level) cho ${chosenUser.name}!`);
+      setRewardMessage(`Thành công! Đã ban tặng cho ${chosenUser.name}: ${addPoints >= 0 ? '+' : ''}${addPoints} PT | ${addLevel >= 0 ? '+' : ''}${addLevel} Level | ${addStreak >= 0 ? '+' : ''}${addStreak} Streak | ${addStudyMinutes >= 0 ? '+' : ''}${addStudyMinutes} Phút học.`);
       
       // Clean up inputs
       setRewardPoints("");
       setRewardLevels("");
+      setRewardStreak("");
+      setRewardStudyMinutes("");
     } catch (err: any) {
       console.error(err);
       setRewardMessage(`Gặp lỗi khi thi triển truyền công: ${err.message}`);
@@ -187,6 +206,8 @@ export default function TeacherDashboard() {
   // Customization & Anti-Duplication States
   const [planTitle, setPlanTitle] = useState("");
   const [planSubject, setPlanSubject] = useState("");
+  const [isAddToExisting, setIsAddToExisting] = useState(false);
+  const [selectedExistingDeckId, setSelectedExistingDeckId] = useState("");
   const [isCreatingNewSubjectPlan, setIsCreatingNewSubjectPlan] = useState(false);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
   const isSavingPlanRef = useRef(false);
@@ -247,30 +268,60 @@ export default function TeacherDashboard() {
     setIsSavingPlan(true); // Ngăn chặn nháy đúp (duplicate)
     
     try {
-      const newDeckId = `deck_${uuidv4()}`;
-      const newDeckObj = {
-        id: newDeckId,
-        title: planTitle.trim() || `Giáo án: ${lessonTopic}`,
-        subject: planSubject.trim() || lessonTopic,
-        cards: lessonPlanData.flashcards?.map((c: any) => ({
-          id: `card_${uuidv4()}`,
-          front: c.front,
-          back: c.back,
-          subject: planSubject.trim() || lessonTopic,
-          mastery: 0,
-          nextReview: Date.now(),
-          isHard: false
-        })) || []
-      };
+      const generatedCards = lessonPlanData.flashcards?.map((c: any) => ({
+        id: `card_${uuidv4()}`,
+        front: c.front,
+        back: c.back,
+        subject: isAddToExisting ? "Học Phần Sẵn Có" : (planSubject.trim() || lessonTopic),
+        mastery: 0,
+        nextReview: Date.now(),
+        isHard: false
+      })) || [];
 
-      // store.addDeck covers both pushing locally and saving to Firebase
-      await store.addDeck(newDeckObj);
+      if (isAddToExisting && selectedExistingDeckId) {
+        const { db } = await import("../lib/firebase");
+        const { doc, getDoc, updateDoc, arrayUnion } = await import("firebase/firestore");
+        const deckRef = doc(db, 'sets', selectedExistingDeckId);
+        
+        const snap = await getDoc(deckRef);
+        if (snap.exists()) {
+           await updateDoc(deckRef, {
+             cards: arrayUnion(...generatedCards)
+           });
+           const updatedDeckSnap = await getDoc(deckRef);
+           if (updatedDeckSnap.exists()) {
+               const updatedDeck = updatedDeckSnap.data() as any;
+               const existingIdx = localDecks.findIndex(d => d.id === selectedExistingDeckId);
+               if (existingIdx !== -1) {
+                  const updatedDecks = [...localDecks];
+                  updatedDecks[existingIdx] = updatedDeck;
+                  if (typeof store.setDecksLocally === 'function') {
+                      store.setDecksLocally(updatedDecks);
+                  }
+               }
+           }
+           alert("Đã thêm thẻ vào bộ thẻ có sẵn thành công!");
+        } else {
+           throw new Error("Không tìm thấy dữ liệu bộ bài gốc trên Cloud");
+        }
+      } else {
+        const newDeckId = `deck_${uuidv4()}`;
+        const newDeckObj = {
+          id: newDeckId,
+          title: planTitle.trim() || `Giáo án: ${lessonTopic}`,
+          subject: planSubject.trim() || lessonTopic,
+          cards: generatedCards
+        };
+        await store.addDeck(newDeckObj);
+        alert("Đã lưu giáo án thành bộ thẻ thành công!");
+      }
       
-      alert("Đã lưu giáo án thành bộ thẻ thành công!");
       setLessonPlanData(null);
       setLessonTopic("");
       setPlanTitle("");
       setPlanSubject("");
+      setIsAddToExisting(false);
+      setSelectedExistingDeckId("");
     } catch (err) {
       console.error(err);
       alert("Lỗi khi lưu bộ thẻ!");
@@ -794,74 +845,112 @@ export default function TeacherDashboard() {
                   <h4 className="font-bold text-violet-700 dark:text-violet-400 mb-2 border-b border-violet-500/20 pb-1">3. Thẻ bộ nhớ (Flashcards)</h4>
                   <p className="text-xs opacity-70 mb-3">Có {lessonPlanData.flashcards?.length} thẻ được tạo.</p>
                   
-                  <div className="space-y-3 mb-4 bg-stone-200/50 dark:bg-zinc-800/50 p-4 rounded-xl border border-stone-300/40 dark:border-zinc-700/50">
-                    <div>
-                      <label className="text-xs font-bold uppercase opacity-70 mb-1 block">Tên Học Phần</label>
-                      <input 
-                        type="text" 
-                        value={planTitle} 
-                        onChange={(e) => setPlanTitle(e.target.value)} 
-                        className="w-full input-3d px-3 py-2 text-sm text-stone-900 dark:text-stone-100"
-                        placeholder="VD: Giáo án: Thế chiến thứ 2"
-                      />
+                  <div className="space-y-4 mb-4">
+                    <div className="p-4 bg-violet-600/5 dark:bg-violet-500/10 border border-violet-600/20 dark:border-violet-500/30 rounded-2xl shadow-sm">
+                       <label className="text-xs font-black uppercase opacity-75 mb-1.5 block tracking-wide">THÊM VÀO BỘ THẺ SẴN CÓ</label>
+                       <select
+                         className="w-full text-xs p-3 bg-white/60 dark:bg-zinc-900/60 border border-stone-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-violet-500 transition font-bold appearance-none cursor-pointer"
+                         value={isAddToExisting && selectedExistingDeckId ? selectedExistingDeckId : "new"}
+                         onChange={(e) => {
+                           if (e.target.value === "new") {
+                             setIsAddToExisting(false);
+                             setSelectedExistingDeckId("");
+                           } else {
+                             setIsAddToExisting(true);
+                             setSelectedExistingDeckId(e.target.value);
+                           }
+                         }}
+                         disabled={isSavingPlan}
+                       >
+                         <option value="new">+ TẠO BỘ BÀI MỚI (Lên cấu hình bên dưới)</option>
+                         {Object.entries(localDecks.reduce((acc, deck) => {
+                           const subj = (deck.subject || "Tự chọn").trim();
+                           if (!acc[subj]) acc[subj] = [];
+                           acc[subj].push(deck);
+                           return acc;
+                         }, {} as Record<string, any[]>)).map(([subject, subjectDecks]: [string, any[]]) => (
+                           <optgroup key={subject} label={`📂 ${subject} (${subjectDecks.length} bộ)`}>
+                             {subjectDecks.map((d: any) => (
+                               <option key={d.id} value={d.id}>
+                                 {d.title} ({d.cards?.length || 0} thẻ)
+                               </option>
+                             ))}
+                           </optgroup>
+                         ))}
+                       </select>
                     </div>
-                    <div>
-                      <label className="text-xs font-bold uppercase opacity-70 mb-1 block">Phân loại / Danh mục</label>
-                      {!isCreatingNewSubjectPlan ? (
-                        <div className="flex gap-2">
-                          <select
-                            value={planSubject}
-                            onChange={(e) => {
-                              if (e.target.value === "__NEW__") {
-                                setIsCreatingNewSubjectPlan(true);
-                                setPlanSubject("");
-                              } else {
-                                setPlanSubject(e.target.value);
-                              }
-                            }}
-                            className="flex-1 input-3d px-3 py-2 text-sm text-stone-900 dark:text-stone-100 bg-stone-200/60 dark:bg-zinc-850"
-                          >
-                            <option value="">-- Chọn phân loại hiện có --</option>
-                            {existingSubjects.map(s => (
-                              <option key={s} value={s}>{s}</option>
-                            ))}
-                            <option value="__NEW__" className="text-violet-600 dark:text-violet-400 font-bold">+ Thêm phân loại mới...</option>
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsCreatingNewSubjectPlan(true);
-                              setPlanSubject("");
-                            }}
-                            className="p-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl flex items-center justify-center transition shadow-md border-b-2 border-violet-800"
-                            title="Thêm danh mục mới"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
+
+                    {!isAddToExisting && (
+                      <div className="space-y-3 bg-stone-200/50 dark:bg-zinc-800/50 p-4 rounded-xl border border-stone-300/40 dark:border-zinc-700/50">
+                        <div>
+                          <label className="text-xs font-bold uppercase opacity-70 mb-1 block">Tên Học Phần</label>
                           <input 
                             type="text" 
-                            value={planSubject} 
-                            onChange={(e) => setPlanSubject(e.target.value)} 
-                            className="flex-1 input-3d px-3 py-2 text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400"
-                            placeholder="Nhập danh mục mới (VD: Sinh học)"
-                            autoFocus
+                            value={planTitle} 
+                            onChange={(e) => setPlanTitle(e.target.value)} 
+                            className="w-full input-3d px-3 py-2 text-sm text-stone-900 dark:text-stone-100"
+                            placeholder="VD: Giáo án: Thế chiến thứ 2"
                           />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsCreatingNewSubjectPlan(false);
-                              setPlanSubject(existingSubjects[0] || "");
-                            }}
-                            className="px-3 bg-stone-300 dark:bg-zinc-800 hover:bg-stone-400 text-stone-800 dark:text-stone-200 rounded-xl text-xs font-bold border border-stone-400/30"
-                          >
-                            Quay lại
-                          </button>
                         </div>
-                      )}
-                    </div>
+                        <div>
+                          <label className="text-xs font-bold uppercase opacity-70 mb-1 block">Phân loại / Danh mục</label>
+                          {!isCreatingNewSubjectPlan ? (
+                            <div className="flex gap-2">
+                              <select
+                                value={planSubject}
+                                onChange={(e) => {
+                                  if (e.target.value === "__NEW__") {
+                                    setIsCreatingNewSubjectPlan(true);
+                                    setPlanSubject("");
+                                  } else {
+                                    setPlanSubject(e.target.value);
+                                  }
+                                }}
+                                className="flex-1 input-3d px-3 py-2 text-sm text-stone-900 dark:text-stone-100 bg-stone-200/60 dark:bg-zinc-850"
+                              >
+                                <option value="">-- Chọn phân loại hiện có --</option>
+                                {existingSubjects.map(s => (
+                                  <option key={s} value={s}>{s}</option>
+                                ))}
+                                <option value="__NEW__" className="text-violet-600 dark:text-violet-400 font-bold">+ Thêm phân loại mới...</option>
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsCreatingNewSubjectPlan(true);
+                                  setPlanSubject("");
+                                }}
+                                className="p-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl flex items-center justify-center transition shadow-md border-b-2 border-violet-800"
+                                title="Thêm danh mục mới"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <input 
+                                type="text" 
+                                value={planSubject} 
+                                onChange={(e) => setPlanSubject(e.target.value)} 
+                                className="flex-1 input-3d px-3 py-2 text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400"
+                                placeholder="Nhập danh mục mới (VD: Sinh học)"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsCreatingNewSubjectPlan(false);
+                                  setPlanSubject(existingSubjects[0] || "");
+                                }}
+                                className="px-3 bg-stone-300 dark:bg-zinc-800 hover:bg-stone-400 text-stone-800 dark:text-stone-200 rounded-xl text-xs font-bold border border-stone-400/30"
+                              >
+                                Quay lại
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <button 
@@ -892,13 +981,13 @@ export default function TeacherDashboard() {
               Kính chào Admin! Tại đây ngài có thể điều chỉnh <strong>Cấp độ (Level)</strong> và <strong>Tinh Hoa (Points)</strong> cho chính mình hoặc những triết gia khác trong danh sách. Hệ thống sẽ lưu lại thần tích này!
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
               <div>
                 <label className="block text-xs font-bold mb-1 opacity-80">Chọn Tu Sĩ Thụ Linh</label>
                 <select
                   value={rewardTargetId}
                   onChange={(e) => setRewardTargetId(e.target.value)}
-                  className="w-full bg-stone-100 dark:bg-zinc-900 border border-stone-300 dark:border-zinc-800 rounded-xl p-2.5 text-xs font-bold"
+                  className="w-full bg-stone-100 dark:bg-zinc-900 border border-stone-300 dark:border-zinc-800 rounded-xl p-2.5 text-[10px] sm:text-xs font-bold"
                 >
                   <option value="">-- Chọn tu sĩ từ giang hồ --</option>
                   {user && (
@@ -906,11 +995,11 @@ export default function TeacherDashboard() {
                       Bản Thân (Admin - {user.name})
                     </option>
                   )}
-                  {dbUsers.map(u => {
+                  {dbUsers.filter(u => !u.isAnonymous && !(u.email || "").includes("anonymous@local")).map(u => {
                     if (user && u.id === user.id) return null;
                     return (
                       <option key={u.id} value={u.id}>
-                        {u.name} ({u.role === "student" ? "Học sinh" : u.role || "student"} | ID: {u.id.substring(0, 6)} | {u.points || 0} PTS)
+                        {u.name} (LV: {u.level || 1} | {u.points || 0} PTS)
                       </option>
                     );
                   })}
@@ -918,10 +1007,10 @@ export default function TeacherDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold mb-1 opacity-80">Tinh Hoa (PT / Points)</label>
+                <label className="block text-xs font-bold mb-1 opacity-80">Tinh Hoa (PT)</label>
                 <input
                   type="text"
-                  placeholder="Ví dụ: +500 hoặc -100"
+                  placeholder="Ví dụ: +500 | -100"
                   value={rewardPoints}
                   onChange={(e) => setRewardPoints(e.target.value)}
                   className="w-full bg-stone-100 dark:bg-zinc-900 border border-stone-300 dark:border-zinc-800 rounded-xl p-2.5 text-xs text-center font-mono font-bold"
@@ -932,7 +1021,7 @@ export default function TeacherDashboard() {
                 <label className="block text-xs font-bold mb-1 opacity-80">Cấp độ (Level)</label>
                 <input
                   type="text"
-                  placeholder="Ví dụ: +1 hoặc -2"
+                  placeholder="Ví dụ: +1 | -2"
                   value={rewardLevels}
                   onChange={(e) => setRewardLevels(e.target.value)}
                   className="w-full bg-stone-100 dark:bg-zinc-900 border border-stone-300 dark:border-zinc-800 rounded-xl p-2.5 text-xs text-center font-mono font-bold"
@@ -940,11 +1029,33 @@ export default function TeacherDashboard() {
               </div>
 
               <div>
+                <label className="block text-xs font-bold mb-1 opacity-80">Chuỗi (Streak)</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: +1 | -1"
+                  value={rewardStreak}
+                  onChange={(e) => setRewardStreak(e.target.value)}
+                  className="w-full bg-stone-100 dark:bg-zinc-900 border border-stone-300 dark:border-zinc-800 rounded-xl p-2.5 text-xs text-center font-mono font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1 opacity-80">Phút học (Mins)</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: +30 | -15"
+                  value={rewardStudyMinutes}
+                  onChange={(e) => setRewardStudyMinutes(e.target.value)}
+                  className="w-full bg-stone-100 dark:bg-zinc-900 border border-stone-300 dark:border-zinc-800 rounded-xl p-2.5 text-xs text-center font-mono font-bold"
+                />
+              </div>
+
+              <div className="lg:col-span-5 mt-2">
                 <button
                   type="button"
                   onClick={handleDispatchReward}
                   disabled={isDispatchingReward || !rewardTargetId}
-                  className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-black font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 border-none cursor-pointer"
+                  className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-black font-extrabold text-sm py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 border-none cursor-pointer"
                 >
                   {isDispatchingReward ? "Đang truyền công..." : "🔥 Ban Phát Sức Mạnh"}
                 </button>
@@ -1511,18 +1622,25 @@ export default function TeacherDashboard() {
       </div>
     </div>
 
-      {user && (user.role === "teacher" || user.role === "admin" || user.role === "Admin") && adminKey && (
-        <div id="monitor" className="pt-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 border border-stone-200 dark:border-zinc-800 rounded-lg bg-stone-50 dark:bg-zinc-900 shadow-sm">
-               <Settings className="w-5 h-5 text-stone-700 dark:text-stone-300" />
-            </div>
-            <div>
-              <h3 className="text-xl font-display font-bold">API Health Monitor</h3>
-              <p className="opacity-60 text-sm">Real-time status of backend API keys.</p>
-            </div>
-          </div>
-          <ServiceMonitor adminKey={adminKey} />
+      {user && (user.role === "teacher" || user.role === "admin" || user.role === "Admin") && (
+        <div id="monitor" className="pt-8 mt-8 border-t border-stone-200 dark:border-zinc-800/80 space-y-4">
+           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 p-4 rounded-2xl">
+              <div>
+                 <h3 className="text-sm font-extrabold text-stone-800 dark:text-stone-100 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-emerald-500 animate-pulse" />
+                    Cổng Giám Sát API Sức Khỏe Thực (Real-time Key Telemetry)
+                 </h3>
+                 <p className="text-xs text-stone-500 mt-1">
+                    Hiển thị chi tiết trạng thái hoạt động, tỷ lệ xoay vòng và hệ số tải của từng cụm provider.
+                 </p>
+              </div>
+              <div className="flex items-center gap-1.5 self-end md:self-auto uppercase tracking-wider font-mono text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-2.5 py-1 rounded-full border border-emerald-500/20 shadow-sm animate-pulse">
+                 Status: Live Monitor
+              </div>
+           </div>
+           <div className="rounded-2xl border border-stone-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/20 p-4 md:p-6 shadow-sm">
+              <ServiceMonitor adminKey={adminKey || localStorage.getItem("henosis_admin_key") || ""} />
+           </div>
         </div>
       )}
 
